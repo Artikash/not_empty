@@ -25,7 +25,7 @@ public:
 	not_empty& operator=(const not_empty&) = default;
 	not_empty& operator=(not_empty&&) = default;
 
-	not_empty& operator=(T other)
+	constexpr not_empty& operator=(T other)
 	{
 		assert_not_empty(other);
 		container = std::move(other);
@@ -82,7 +82,7 @@ public:
 		}
 
 	#define NOT_EMPTY_FORWARD_MUTABLE(fn)\
-	template <typename... args_t>\
+		template <typename... args_t>\
 		constexpr auto fn(args_t&&... args) ->\
 			decltype(container.fn(std::forward<args_t>(args)...))\
 		{\
