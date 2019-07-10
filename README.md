@@ -1,4 +1,5 @@
 # not_empty
+## WIP
 A C++ template for containers that should not under any circumstance be empty.
 
 Use it just like any old standard library container:

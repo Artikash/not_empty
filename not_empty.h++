@@ -14,9 +14,9 @@ public:
 
 	template <typename... args_t>
 	constexpr not_empty(args_t&&... args) :
-		container{ std::forward<args_t>(args)... }
+		contents{ std::forward<args_t>(args)... }
 	{
-		static_assert(sizeof...(args), "Must initialize not_empty container");
+		static_assert(sizeof...(args), "Must initialize not_empty");
 		assert_not_empty();
 	}
 
@@ -28,65 +28,65 @@ public:
 	constexpr not_empty& operator=(T other)
 	{
 		assert_not_empty(other);
-		container = std::move(other);
+		contents = std::move(other);
 		return *this;
 	}
 
 	constexpr const T& get() const
 	{
-		return container;
+		return contents;
 	}
 
 	constexpr operator const T&() const
 	{
-		return container;
+		return contents;
 	}
 
 	constexpr const T* operator->() const
 	{
-		return &container;
+		return &contents;
 	}
 
 	struct proxy_t
 	{
-		proxy_t(T& container) :
-			container{ container }
+		constexpr proxy_t(T& contents) :
+			contents{ contents }
 		{}
 
 		proxy_t(const proxy_t&) = default;
 
 		T* operator->() const
 		{
-			return &container;
+			return &contents;
 		}
 
 		~proxy_t()
 		{
-			assert_not_empty(container);
+			assert_not_empty(contents);
 		}
 
-		T& container;
+		T& contents;
 	};
 
-	proxy_t writeable()
+	proxy_t writable()
 	{
-		return proxy_t{ container };
+		return proxy_t{ contents };
 	}
 
 	#define NOT_EMPTY_FORWARD_CONST(fn)\
 		template <typename... args_t>\
 		constexpr auto fn(args_t&&... args) const ->\
-			decltype(container.fn(std::forward<args_t>(args)...))\
+			decltype(contents.fn(std::forward<args_t>(args)...))\
 		{\
-			return container.fn(std::forward<args_t>(args)...);\
+			return contents.fn(std::forward<args_t>(args)...);\
 		}
 
 	#define NOT_EMPTY_FORWARD_MUTABLE(fn)\
 		template <typename... args_t>\
 		constexpr auto fn(args_t&&... args) ->\
-			decltype(container.fn(std::forward<args_t>(args)...))\
+			decltype(contents.fn(std::forward<args_t>(args)...))\
 		{\
-			return container.fn(std::forward<args_t>(args)...);\
+			return contents.fn(std::forward<args_t>(args)...);\
 		}
 
 	#define NOT_EMPTY_FORWARD_GENERIC(fn)\
@@ -96,12 +96,19 @@ public:
 	#define NOT_EMPTY_FORWARD_AND_ASSERT(fn)\
 		template <typename... args_t>\
 		constexpr auto fn(args_t&&... args) ->\
-			decltype(container.fn(std::forward<args_t>(args)...))\
+			decltype(contents.fn(std::forward<args_t>(args)...))\
 		{\
-			auto&& ret = container.fn(std::forward<args_t>(args)...);\
-			assert_not_empty();\
-			return ret;\
+			return writable()->fn(std::forward<args_t>(args)...);\
 		}
+
+	#define NOT_EMPTY_FORWARD_TYPEDEF(t)\
+	private:\
+		template <typename T>\
+		static auto t##_forwarder(int) -> typename T::t;\
+		template <typename T>\
+		static auto t##_forwarder(...) -> void;\
+	public:\
+		using t = decltype(t##_forwarder<T>(0));
 
 	NOT_EMPTY_FORWARD_CONST(cbegin)
 	NOT_EMPTY_FORWARD_CONST(cend)
@@ -160,11 +167,34 @@ public:
 	NOT_EMPTY_FORWARD_AND_ASSERT(remove_if)
 	NOT_EMPTY_FORWARD_AND_ASSERT(extract)
 
+	NOT_EMPTY_FORWARD_TYPEDEF(value_type)
+	NOT_EMPTY_FORWARD_TYPEDEF(size_type)
+	NOT_EMPTY_FORWARD_TYPEDEF(difference_type)
+	NOT_EMPTY_FORWARD_TYPEDEF(reference)
+	NOT_EMPTY_FORWARD_TYPEDEF(const_reference)
+	NOT_EMPTY_FORWARD_TYPEDEF(pointer)
+	NOT_EMPTY_FORWARD_TYPEDEF(const_pointer)
+	NOT_EMPTY_FORWARD_TYPEDEF(iterator)
+	NOT_EMPTY_FORWARD_TYPEDEF(const_iterator)
+	NOT_EMPTY_FORWARD_TYPEDEF(reverse_iterator)
+	NOT_EMPTY_FORWARD_TYPEDEF(const_reverse_iterator)
+	NOT_EMPTY_FORWARD_TYPEDEF(allocator_type)
+	NOT_EMPTY_FORWARD_TYPEDEF(key_type)
+	NOT_EMPTY_FORWARD_TYPEDEF(key_compare)
+	NOT_EMPTY_FORWARD_TYPEDEF(value_compare)
+	NOT_EMPTY_FORWARD_TYPEDEF(node_type)
+	NOT_EMPTY_FORWARD_TYPEDEF(insert_return_type)
+	NOT_EMPTY_FORWARD_TYPEDEF(mapped_type)
+	NOT_EMPTY_FORWARD_TYPEDEF(hasher)
+	NOT_EMPTY_FORWARD_TYPEDEF(local_iterator)
+	NOT_EMPTY_FORWARD_TYPEDEF(const_local_iterator)
+	NOT_EMPTY_FORWARD_TYPEDEF(key_equal)
+
 private:
 
-	static constexpr void assert_not_empty(const T& container)
+	static constexpr void assert_not_empty(const T& contents)
 	{
-		if (std::empty(container))
+		if (std::empty(contents))
 		{
 			assert(false);
 			std::terminate();
@@ -173,10 +203,10 @@ private:
 
 	constexpr void assert_not_empty() const
 	{
-		assert_not_empty(container);
+		assert_not_empty(contents);
 	}
 
-	T container;
+	T contents;
 };
 
 #endif

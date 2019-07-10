@@ -11,4 +11,8 @@ int main()
 	for (auto i : foo) std::cout << i;
 	std::cout << foo[0];
 	//foo.erase(foo.begin(), foo.end());
+	std::stack<int, not_empty<std::vector<int>>> bar{ foo };
+	std::cout << bar.top();
+	bar.push(6);
+	std::cout << bar.top();
 }
